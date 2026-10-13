@@ -25,7 +25,8 @@ tools_schema = [
     }
 ]
 
-def get_weather(city:str,date:str="today")->dict:
+
+def get_weather(city: str, date: str = "today") -> dict:
     """
         查询指定城市的天气
 
@@ -62,6 +63,7 @@ def get_weather(city:str,date:str="today")->dict:
         "weather": weather,
         "temperature": f"{temp}°C",
     }
+
 
 import json
 from openai import OpenAI
@@ -112,4 +114,53 @@ def run_agent(user_message: str) -> str:
             })
 
 
-print(run_agent("广州今天天气怎么样？"))
+def run_agent_loop():
+    """多轮对话agent"""
+    messages = [
+        {"role": "system", "content": "你是一个天气助手，帮用户查询天气。用自然语言回答。"}
+    ]
+
+    print("🌤️ 天气助手已启动，输入 'quit' 退出\n")
+
+    while True:
+        user_input = input("👤 ")
+        if user_input.lower() in ["quit", "exit", "退出"]:
+            print("👋 再见！")
+            break
+
+        messages.append({"role": "user", "content": user_input})
+
+        while True:
+            response = client.chat.completions.create(
+                model="glm-4-flash",
+                messages=messages,
+                tools=tools_schema,
+            )
+            msg = response.choices[0].message
+
+            if not msg.tool_calls:
+                print(f"🤖 {msg.content}\n")
+                messages.append(msg)
+                break
+            messages.append(msg)
+
+            for tool_call in msg.tool_calls:
+                func_name = tool_call.function.name
+                func_args = json.loads(tool_call.function.arguments)
+                print(f"🔧 调用: {func_name}({func_args})")
+
+                if func_name == "get_weather":
+                    result = get_weather(**func_args)
+                else:
+                    result = {"error": f"未知工具"}
+
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": json.dumps(result, ensure_ascii=False),
+                })
+
+
+##print(run_agent("广州今天天气怎么样？"))
+
+run_agent_loop()
