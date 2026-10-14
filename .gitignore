@@ -4,6 +4,7 @@ __pycache__/
 *.pyo
 .Python
 .env
+env/
 .venv/
 pip-wheel-metadata/
 .pytest_cache/
