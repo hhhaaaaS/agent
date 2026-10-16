@@ -4,6 +4,7 @@ from typing import Dict, List
 
 from langchain.agents import create_agent, AgentState
 from langchain.agents.middleware import dynamic_prompt, ModelRequest
+from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
 
 
@@ -88,3 +89,12 @@ class AgentClient:
         except Exception as e:
             print(f"\n调用出错：{e}")
             return "错误:调用大语言模型服务时出错。"
+
+    def invoke(self, messages, temperature: float | None = None) -> AIMessage:
+        """
+        裸模型非流式调用：接收 LangChain 消息对象列表，返回完整 AIMessage。
+        适合节点内部消费（解析结构/传给下一节点），不适合直接给用户看流式。
+        """
+        print("开始调用大模型")
+        bound = self.model.bind(temperature=temperature) if temperature is not None else self.model
+        return bound.invoke(messages)
